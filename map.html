@@ -46,6 +46,7 @@
 
         let isPanning = false;
         let startPoint = { x: 0, y: 0 };
+        let lastTouchCenter = null;
         let scale = 1;
         let initialPinchDistance = null;
 
@@ -65,8 +66,8 @@
             const mx = e.offsetX; // Mouse x relative to the container
             const my = e.offsetY; // Mouse y relative to the container
 
-            const dw = w * zoomFactor * (e.deltaY > 0 ? -1 : 1); // Adjusted zoom direction
-            const dh = h * zoomFactor * (e.deltaY > 0 ? -1 : 1);
+            const dw = -w * zoomFactor * (e.deltaY > 0 ? -1 : 1); // Adjusted zoom direction
+            const dh = -h * zoomFactor * (e.deltaY > 0 ? -1 : 1);
 
             viewBox = {
                 x: viewBox.x + (dw * mx / svgImage.clientWidth),
@@ -111,6 +112,7 @@
         svgContainer.ontouchstart = function (e) {
             if (e.touches.length === 2) {
                 initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                lastTouchCenter = getTouchCenter(e.touches[0], e.touches[1]);
             } else if (e.touches.length === 1) {
                 startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
             }
@@ -124,12 +126,11 @@
                 const dw = viewBox.w * (1 - pinchRatio);
                 const dh = viewBox.h * (1 - pinchRatio);
 
-                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const center = getTouchCenter(e.touches[0], e.touches[1]);
 
                 viewBox = {
-                    x: viewBox.x + (dw * cx / svgImage.clientWidth),
-                    y: viewBox.y + (dh * cy / svgImage.clientHeight),
+                    x: viewBox.x + (dw * center.x / svgImage.clientWidth),
+                    y: viewBox.y + (dh * center.y / svgImage.clientHeight),
                     w: viewBox.w - dw,
                     h: viewBox.h - dh
                 };
@@ -151,13 +152,23 @@
         };
 
         svgContainer.ontouchend = function (e) {
-            if (e.touches.length === 0) {
+            if (e.touches.length === 1) {
+                startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                lastTouchCenter = null; // Reset last touch center when ending pinch
+            } else if (e.touches.length === 0) {
                 initialPinchDistance = null; // Reset pinch distance when no touches are active
             }
         };
 
         function getDistance(touch1, touch2) {
             return Math.sqrt(Math.pow(touch2.clientX - touch1.clientX, 2) + Math.pow(touch2.clientY - touch1.clientY, 2));
+        }
+
+        function getTouchCenter(touch1, touch2) {
+            return {
+                x: (touch1.clientX + touch2.clientX) / 2,
+                y: (touch1.clientY + touch2.clientY) / 2
+            };
         }
     </script>
 </body>
