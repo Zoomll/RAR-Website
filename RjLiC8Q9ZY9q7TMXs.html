@@ -1,0 +1,113 @@
+<html><head><base href="https://websimdemo.com/">
+<title>Interactive SVG Map</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+    }
+    #map-container {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    svg {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    .country {
+        fill: #ccc;
+        stroke: #fff;
+        stroke-width: 0.5;
+        transition: fill 0.3s;
+    }
+    .country:hover {
+        fill: #999;
+    }
+    #info-box {
+        position: absolute;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 5px;
+        padding: 10px;
+        display: none;
+    }
+</style>
+</head>
+<body>
+<div id="map-container">
+    <!-- This is where you can insert your own SVG map -->
+    <svg width="800" height="400" viewBox="0 0 800 400">
+        <!-- Example SVG map (simplified world map) -->
+        <path class="country" d="M200,100 L220,80 L240,100 L220,120 Z" data-name="Country 1" />
+        <path class="country" d="M250,150 L270,130 L290,150 L270,170 Z" data-name="Country 2" />
+        <path class="country" d="M300,200 L320,180 L340,200 L320,220 Z" data-name="Country 3" />
+        <!-- Add more paths for other countries -->
+    </svg>
+</div>
+
+<div id="info-box"></div>
+
+<script>
+    const mapContainer = document.getElementById('map-container');
+    const infoBox = document.getElementById('info-box');
+    const countries = document.querySelectorAll('.country');
+
+    countries.forEach(country => {
+        country.addEventListener('mousemove', (e) => {
+            const countryName = country.getAttribute('data-name');
+            infoBox.innerHTML = countryName;
+            infoBox.style.display = 'block';
+            infoBox.style.left = e.pageX + 10 + 'px';
+            infoBox.style.top = e.pageY + 10 + 'px';
+        });
+
+        country.addEventListener('mouseout', () => {
+            infoBox.style.display = 'none';
+        });
+
+        country.addEventListener('click', () => {
+            alert(`You clicked on ${country.getAttribute('data-name')}`);
+        });
+    });
+
+    // Pan and zoom functionality
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+    let scale = 1;
+
+    mapContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+
+    mapContainer.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+    });
+
+    mapContainer.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    mapContainer.addEventListener('mouseleave', () => {
+        isDragging = false;
+    });
+
+    mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        scale += e.deltaY * -0.001;
+        scale = Math.min(Math.max(0.5, scale), 4);
+        mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    });
+</script>
+</body></html>
