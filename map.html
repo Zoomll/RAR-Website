@@ -1,169 +1,171 @@
-<html><head><base href="https://websimdemo.com/">
-<title>Interactive SVG Map from File</title>
-<style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        font-family: Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-    }
-    #map-container {
-        flex-grow: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        overflow: hidden;
-        border: 2px solid #333;
-        margin: 20px;
-    }
-    #map-svg {
-        max-width: 100%;
-        max-height: 100%;
-    }
-    #info-box {
-        position: absolute;
-        background: white;
-        border: 1px solid #999;
-        border-radius: 5px;
-        padding: 10px;
-        display: none;
-        pointer-events: none;
-    }
-    #status {
-        text-align: center;
-        padding: 10px;
-        background-color: #f0f0f0;
-        margin-bottom: 10px;
-    }
-</style>
+<html>
+<head>
+    <title>Interactive SVG Map from File</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        #map-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            border: 2px solid #333;
+            margin: 20px;
+        }
+        #map-svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #info-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #999;
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+            pointer-events: none;
+        }
+        #status {
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
-<div id="status">Loading SVG...</div>
-<div id="map-container">
-    <!-- The SVG will be loaded here -->
-</div>
+    <div id="status">Loading SVG...</div>
+    <div id="map-container">
+        <!-- The SVG will be loaded here -->
+    </div>
 
-<div id="info-box"></div>
+    <div id="info-box"></div>
 
-<script>
-    const mapContainer = document.getElementById('map-container');
-    const infoBox = document.getElementById('info-box');
-    const statusDiv = document.getElementById('status');
-    let mapSvg;
+    <script>
+        const mapContainer = document.getElementById('map-container');
+        const infoBox = document.getElementById('info-box');
+        const statusDiv = document.getElementById('status');
+        let mapSvg;
 
-    // Function to load the SVG file
-    function loadSVG() {
-        fetch('TheRobloxianArchipelagoMapV1.svg')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text();
-            })
-            .then(svgContent => {
-                mapContainer.innerHTML = svgContent;
-                mapSvg = document.querySelector('#map-container svg');
-                if (mapSvg) {
-                    mapSvg.id = 'map-svg';
-                    addInteractivity();
-                    setupPanAndZoom();
-                    statusDiv.textContent = 'SVG loaded successfully!';
-                    statusDiv.style.backgroundColor = '#d4edda';
-                } else {
-                    throw new Error('No SVG element found in the loaded file');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading SVG:', error);
-                statusDiv.textContent = `Error loading SVG: ${error.message}`;
-                statusDiv.style.backgroundColor = '#f8d7da';
-            });
-    }
-
-    // Call this function to load the SVG
-    loadSVG();
-
-    // Pan and zoom functionality
-    function setupPanAndZoom() {
-        let isDragging = false;
-        let startX, startY, translateX = 0, translateY = 0;
-        let scale = 1;
-
-        function updateMapTransform() {
-            mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        // Function to load the SVG file
+        function loadSVG() {
+            fetch('TheRobloxianArchipelagoMapV1.svg')  // Ensure this path is correct relative to the server/HTML file
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(svgContent => {
+                    mapContainer.innerHTML = svgContent;
+                    mapSvg = document.querySelector('#map-container svg');
+                    if (mapSvg) {
+                        mapSvg.id = 'map-svg';
+                        addInteractivity();
+                        setupPanAndZoom();
+                        statusDiv.textContent = 'SVG loaded successfully!';
+                        statusDiv.style.backgroundColor = '#d4edda';
+                    } else {
+                        throw new Error('No SVG element found in the loaded file');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading SVG:', error);
+                    statusDiv.textContent = `Error loading SVG: ${error.message}`;
+                    statusDiv.style.backgroundColor = '#f8d7da';
+                });
         }
 
-        mapContainer.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX - translateX;
-            startY = e.clientY - translateY;
-        });
+        // Call this function to load the SVG
+        loadSVG();
 
-        mapContainer.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
-                updateMapTransform();
+        // Pan and zoom functionality
+        function setupPanAndZoom() {
+            let isDragging = false;
+            let startX, startY, translateX = 0, translateY = 0;
+            let scale = 1;
+
+            function updateMapTransform() {
+                mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
             }
-        });
 
-        mapContainer.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        mapContainer.addEventListener('mouseleave', () => {
-            isDragging = false;
-        });
-
-        mapContainer.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const rect = mapSvg.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            const scaleDelta = e.deltaY * -0.001;
-            const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
-
-            const scaleRatio = newScale / scale;
-            translateX = mouseX - (mouseX - translateX) * scaleRatio;
-            translateY = mouseY - (mouseY - translateY) * scaleRatio;
-
-            scale = newScale;
-            updateMapTransform();
-        });
-    }
-
-    // Function to add interactivity to SVG elements
-    function addInteractivity() {
-        const interactiveElements = mapSvg.querySelectorAll('path, polygon, rect, circle, ellipse');
-
-        interactiveElements.forEach(element => {
-            element.style.transition = 'fill 0.3s';
-            const originalFill = element.getAttribute('fill') || '#ccc';
-            const hoverFill = '#999';
-
-            element.addEventListener('mousemove', (e) => {
-                const name = element.getAttribute('data-name') || 'Unnamed Area';
-                infoBox.innerHTML = name;
-                infoBox.style.display = 'block';
-                infoBox.style.left = e.pageX + 10 + 'px';
-                infoBox.style.top = e.pageY + 10 + 'px';
-                element.style.fill = hoverFill;
+            mapContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
             });
 
-            element.addEventListener('mouseout', () => {
-                infoBox.style.display = 'none';
-                element.style.fill = originalFill;
+            mapContainer.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    translateX = e.clientX - startX;
+                    translateY = e.clientY - startY;
+                    updateMapTransform();
+                }
             });
 
-            element.addEventListener('click', () => {
-                const name = element.getAttribute('data-name') || 'Unnamed Area';
-                alert(`You clicked on ${name}`);
+            mapContainer.addEventListener('mouseup', () => {
+                isDragging = false;
             });
-        });
-    }
-</script>
-</body></html>
+
+            mapContainer.addEventListener('mouseleave', () => {
+                isDragging = false;
+            });
+
+            mapContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = mapSvg.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const scaleDelta = e.deltaY * -0.001;
+                const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
+
+                const scaleRatio = newScale / scale;
+                translateX = mouseX - (mouseX - translateX) * scaleRatio;
+                translateY = mouseY - (mouseY - translateY) * scaleRatio;
+
+                scale = newScale;
+                updateMapTransform();
+            });
+        }
+
+        // Function to add interactivity to SVG elements
+        function addInteractivity() {
+            const interactiveElements = mapSvg.querySelectorAll('path, polygon, rect, circle, ellipse');
+
+            interactiveElements.forEach(element => {
+                element.style.transition = 'fill 0.3s';
+                const originalFill = element.getAttribute('fill') || '#ccc';
+                const hoverFill = '#999';
+
+                element.addEventListener('mousemove', (e) => {
+                    const name = element.getAttribute('data-name') || 'Unnamed Area';
+                    infoBox.innerHTML = name;
+                    infoBox.style.display = 'block';
+                    infoBox.style.left = e.pageX + 10 + 'px';
+                    infoBox.style.top = e.pageY + 10 + 'px';
+                    element.style.fill = hoverFill;
+                });
+
+                element.addEventListener('mouseout', () => {
+                    infoBox.style.display = 'none';
+                    element.style.fill = originalFill;
+                });
+
+                element.addEventListener('click', () => {
+                    const name = element.getAttribute('data-name') || 'Unnamed Area';
+                    alert(`You clicked on ${name}`);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
