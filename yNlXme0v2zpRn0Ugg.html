@@ -1,0 +1,143 @@
+<html><head><base href="https://websimdemo.com/">
+<title>Interactive SVG Map Template</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+    }
+    #map-container {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        overflow: hidden;
+    }
+    svg {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    #info-box {
+        position: absolute;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 5px;
+        padding: 10px;
+        display: none;
+        pointer-events: none;
+    }
+</style>
+</head>
+<body>
+<div id="map-container">
+    <!-- This is where you will insert your own SVG map -->
+    <svg id="map-svg" width="800" height="400" viewBox="0 0 800 400">
+        <!-- Your SVG content will go here -->
+    </svg>
+</div>
+
+<div id="info-box"></div>
+
+<script>
+    const mapContainer = document.getElementById('map-container');
+    const mapSvg = document.getElementById('map-svg');
+    const infoBox = document.getElementById('info-box');
+
+    // Pan and zoom functionality
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+    let scale = 1;
+
+    function updateMapTransform() {
+        mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+
+    mapContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+
+    mapContainer.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateMapTransform();
+        }
+    });
+
+    mapContainer.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    mapContainer.addEventListener('mouseleave', () => {
+        isDragging = false;
+    });
+
+    mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = mapSvg.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const scaleDelta = e.deltaY * -0.001;
+        const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
+
+        const scaleRatio = newScale / scale;
+        translateX = mouseX - (mouseX - translateX) * scaleRatio;
+        translateY = mouseY - (mouseY - translateY) * scaleRatio;
+
+        scale = newScale;
+        updateMapTransform();
+    });
+
+    // Function to add interactivity to SVG elements
+    function addInteractivity() {
+        const interactiveElements = mapSvg.querySelectorAll('path, polygon, rect, circle, ellipse');
+
+        interactiveElements.forEach(element => {
+            element.style.transition = 'fill 0.3s';
+            const originalFill = element.getAttribute('fill') || '#ccc';
+            const hoverFill = '#999';
+
+            element.addEventListener('mousemove', (e) => {
+                const name = element.getAttribute('data-name') || 'Unnamed Area';
+                infoBox.innerHTML = name;
+                infoBox.style.display = 'block';
+                infoBox.style.left = e.pageX + 10 + 'px';
+                infoBox.style.top = e.pageY + 10 + 'px';
+                element.style.fill = hoverFill;
+            });
+
+            element.addEventListener('mouseout', () => {
+                infoBox.style.display = 'none';
+                element.style.fill = originalFill;
+            });
+
+            element.addEventListener('click', () => {
+                const name = element.getAttribute('data-name') || 'Unnamed Area';
+                alert(`You clicked on ${name}`);
+            });
+        });
+    }
+
+    // Call this function after you've inserted your SVG content
+    // addInteractivity();
+
+    // You can also create a MutationObserver to automatically add interactivity
+    // when the SVG content changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                addInteractivity();
+            }
+        });
+    });
+
+    observer.observe(mapSvg, { childList: true, subtree: true });
+</script>
+</body></html>
