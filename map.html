@@ -30,9 +30,7 @@
 <body>
     <span id="zoomValue">1</span>
     <div id="svgContainer">
-        <!-- Your SVG Map (The Robloxian Archipelago Map) -->
         <svg id="svgImage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1000" preserveAspectRatio="xMidYMid meet">
-            <!-- Load your map image here -->
             <image href="TheRobloxianArchipelagoMapV1.svg" width="2000" height="1000" />
         </svg>
     </div>
@@ -49,31 +47,29 @@
         let startPoint = { x: 0, y: 0 };
         let scale = 1;
 
-        // Mousewheel Zooming (fix zoom direction)
+        // Mousewheel Zooming
         svgContainer.onwheel = function (e) {
             e.preventDefault();
+            const zoomFactor = 0.1; // Zoom factor
             let w = viewBox.w;
             let h = viewBox.h;
-            let mx = e.offsetX; // mouse x
-            let my = e.offsetY; // mouse y
-
+            let mx = e.offsetX;
+            let my = e.offsetY;
+            
             // Calculate zoom step
-            let dw = -w * Math.sign(e.deltaY) * 0.05;
-            let dh = -h * Math.sign(e.deltaY) * 0.05;
-
-            // Calculate mouse positioning in relation to zoom
-            let dx = (dw * mx) / svgSize.w;
-            let dy = (dh * my) / svgSize.h;
-
-            // Update the viewBox values
+            let dw = w * zoomFactor * (e.deltaY > 0 ? -1 : 1);
+            let dh = h * zoomFactor * (e.deltaY > 0 ? -1 : 1);
+            
+            // Calculate new viewBox
+            let dx = dw * mx / svgSize.w;
+            let dy = dh * my / svgSize.h;
             viewBox = {
                 x: viewBox.x + dx,
                 y: viewBox.y + dy,
                 w: viewBox.w - dw,
                 h: viewBox.h - dh
             };
-            
-            // Update scale and set the new viewBox
+
             scale = svgSize.w / viewBox.w;
             svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
             zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
@@ -82,32 +78,15 @@
         // Mouse Dragging for Panning
         svgContainer.onmousedown = function (e) {
             isPanning = true;
-            startPoint = { x: e.x, y: e.y };   
+            startPoint = { x: e.clientX, y: e.clientY };
         };
 
         svgContainer.onmousemove = function (e) {
             if (isPanning) {
-                let dx = (startPoint.x - e.x) / scale;
-                let dy = (startPoint.y - e.y) / scale;
+                let dx = (startPoint.x - e.clientX) / scale;
+                let dy = (startPoint.y - e.clientY) / scale;
 
                 // Update viewBox as we pan
-                let movedViewBox = {
-                    x: viewBox.x + dx,
-                    y: viewBox.y + dy,
-                    w: viewBox.w,
-                    h: viewBox.h
-                };
-
-                svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
-            }
-        };
-
-        svgContainer.onmouseup = function (e) {
-            if (isPanning) {
-                let dx = (startPoint.x - e.x) / scale;
-                let dy = (startPoint.y - e.y) / scale;
-
-                // Update the final position after panning
                 viewBox = {
                     x: viewBox.x + dx,
                     y: viewBox.y + dy,
@@ -116,8 +95,12 @@
                 };
 
                 svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-                isPanning = false;
+                startPoint = { x: e.clientX, y: e.clientY };
             }
+        };
+
+        svgContainer.onmouseup = function () {
+            isPanning = false;
         };
 
         svgContainer.onmouseleave = function () {
@@ -126,14 +109,14 @@
 
         // Mobile Touch Support
         let touchStart = [];
-        svgContainer.ontouchstart = function(e) {
+        svgContainer.ontouchstart = function (e) {
             if (e.touches.length === 2) {
                 e.preventDefault();
                 touchStart = [e.touches[0], e.touches[1]];
             }
         };
 
-        svgContainer.ontouchmove = function(e) {
+        svgContainer.ontouchmove = function (e) {
             if (e.touches.length === 2) {
                 e.preventDefault();
 
