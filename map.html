@@ -53,7 +53,7 @@
         let initialPinchDistance = null;
         let lastTouchCenter = null;
 
-        // Desktop: Mouse Wheel Zooming (Reversed the direction)
+        // Desktop: Mouse Wheel Zooming (Inverted to zoom correctly)
         svgContainer.onmousewheel = function (e) {
             e.preventDefault();
             const w = viewBox.w;
@@ -61,8 +61,8 @@
             const mx = e.offsetX; // Mouse x relative to the container
             const my = e.offsetY; // Mouse y relative to the container
 
-            const dw = w * Math.sign(e.deltaY) * 0.1; // Reversed zoom factor
-            const dh = h * Math.sign(e.deltaY) * 0.1;
+            const dw = -w * Math.sign(e.deltaY) * 0.1; // Inverted zoom factor
+            const dh = -h * Math.sign(e.deltaY) * 0.1;
 
             const dx = (dw * mx) / svgSize.w;
             const dy = (dh * my) / svgSize.h;
@@ -127,8 +127,8 @@
                 const pinchRatio = initialPinchDistance / newPinchDistance;
                 const center = getTouchCenter(e.touches[0], e.touches[1]);
 
-                const dw = viewBox.w * (pinchRatio - 1);
-                const dh = viewBox.h * (pinchRatio - 1);
+                const dw = viewBox.w * (1 - pinchRatio); // Inverted zoom factor for mobile
+                const dh = viewBox.h * (1 - pinchRatio);
 
                 const dx = (dw * center.x) / svgSize.w;
                 const dy = (dh * center.y) / svgSize.h;
