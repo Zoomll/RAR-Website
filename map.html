@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG Zoom and Pan</title>
+    <title>Interactive SVG Map with Zoom and Pan (Desktop + Mobile)</title>
     <style>
         #svgContainer {
             width: 100vw;
@@ -11,6 +11,7 @@
             overflow: hidden;
             border: 1px solid black;
             position: relative;
+            touch-action: none; /* Disable default touch actions */
         }
         #svgImage {
             width: 100%;
@@ -29,8 +30,9 @@
 <body>
     <span id="zoomValue">1</span>
     <div id="svgContainer">
+        <!-- Example SVG content -->
         <svg id="svgImage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
-            <!-- Sample SVG content -->
+            <!-- Replace this with your actual SVG content -->
             <circle cx="500" cy="500" r="400" stroke="black" stroke-width="10" fill="lightblue"></circle>
         </svg>
     </div>
@@ -42,26 +44,29 @@
 
         let viewBox = { x: 0, y: 0, w: 1000, h: 1000 }; // Initial viewBox matching SVG dimensions
         svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-        
+
         const svgSize = { w: svgImage.clientWidth, h: svgImage.clientHeight };
         let isPanning = false;
         let startPoint = { x: 0, y: 0 };
         let endPoint = { x: 0, y: 0 };
         let scale = 1;
+        let initialPinchDistance = null;
+        let lastTouchCenter = null;
 
+        // Desktop: Mouse Wheel Zooming
         svgContainer.onmousewheel = function (e) {
             e.preventDefault();
             const w = viewBox.w;
             const h = viewBox.h;
-            const mx = e.offsetX; // mouse x relative to the container
-            const my = e.offsetY; // mouse y relative to the container
-            
-            const dw = w * Math.sign(e.deltaY) * 0.1; // zoom factor (increase/decrease size)
+            const mx = e.offsetX; // Mouse x relative to the container
+            const my = e.offsetY; // Mouse y relative to the container
+
+            const dw = w * Math.sign(e.deltaY) * 0.1; // Zoom factor (increase/decrease size)
             const dh = h * Math.sign(e.deltaY) * 0.1;
-            
-            const dx = dw * mx / svgSize.w; // adjust x based on mouse position
-            const dy = dh * my / svgSize.h; // adjust y based on mouse position
-            
+
+            const dx = dw * mx / svgSize.w; // Adjust x based on mouse position
+            const dy = dh * my / svgSize.h; // Adjust y based on mouse position
+
             viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w - dw, h: viewBox.h - dh };
             scale = svgSize.w / viewBox.w;
 
@@ -70,12 +75,13 @@
 
             // Apply the new viewBox
             svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-        }
+        };
 
+        // Desktop: Mouse Panning
         svgContainer.onmousedown = function (e) {
             isPanning = true;
             startPoint = { x: e.x, y: e.y };
-        }
+        };
 
         svgContainer.onmousemove = function (e) {
             if (isPanning) {
@@ -86,22 +92,79 @@
                 const movedViewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
                 svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
             }
-        }
+        };
 
-        svgContainer.onmouseup = function (e) {
+        svgContainer.onmouseup = function () {
             if (isPanning) {
-                endPoint = { x: e.x, y: e.y };
+                isPanning = false;
+            }
+        };
+
+        svgContainer.onmouseleave = function () {
+            isPanning = false;
+        };
+
+        // Mobile: Pinch-to-zoom support
+        svgContainer.ontouchstart = function (e) {
+            if (e.touches.length === 2) {
+                initialPinchDistance = getPinchDistance(e.touches);
+                lastTouchCenter = getTouchCenter(e.touches);
+            } else if (e.touches.length === 1) {
+                isPanning = true;
+                startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        };
+
+        svgContainer.ontouchmove = function (e) {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // Handle pinch-to-zoom
+                const newPinchDistance = getPinchDistance(e.touches);
+                const pinchZoomFactor = initialPinchDistance / newPinchDistance;
+                const center = getTouchCenter(e.touches);
+
+                const dw = viewBox.w * (pinchZoomFactor - 1);
+                const dh = viewBox.h * (pinchZoomFactor - 1);
+
+                const dx = dw * center.x / svgSize.w;
+                const dy = dh * center.y / svgSize.h;
+
+                viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w / pinchZoomFactor, h: viewBox.h / pinchZoomFactor };
+                scale = svgSize.w / viewBox.w;
+
+                zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
+                svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+
+                initialPinchDistance = newPinchDistance;
+                lastTouchCenter = center;
+            } else if (e.touches.length === 1 && isPanning) {
+                // Handle pan
+                endPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
                 const dx = (startPoint.x - endPoint.x) / scale;
                 const dy = (startPoint.y - endPoint.y) / scale;
 
                 viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
                 svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-                isPanning = false;
+                startPoint = endPoint;
             }
+        };
+
+        svgContainer.ontouchend = function () {
+            isPanning = false;
+            initialPinchDistance = null;
+        };
+
+        function getPinchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
-        svgContainer.onmouseleave = function () {
-            isPanning = false;
+        function getTouchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
         }
     </script>
 </body>
