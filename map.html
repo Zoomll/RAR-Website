@@ -99,7 +99,7 @@
             isPanning = false;
         };
 
-        // Mobile: Touch Zooming & Panning
+        // Mobile: Touch Zooming & Panning (Focus on touch points)
         svgContainer.ontouchstart = function (e) {
             if (e.touches.length === 2) {
                 initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
