@@ -17,21 +17,13 @@
             width: 100%;
             height: 100%;
         }
-        #zoomValue {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 5px;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
-    <span id="zoomValue">1</span>
     <div id="svgContainer">
         <!-- Replace this SVG link with your actual Robloxian Archipelago Map -->
         <svg id="svgImage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1000" preserveAspectRatio="xMidYMid meet">
+            <!-- Your Robloxian Archipelago Map should be included here -->
             <image href="TheRobloxianArchipelagoMapV1.svg" width="2000" height="1000" />
         </svg>
     </div>
@@ -39,39 +31,42 @@
     <script>
         const svgImage = document.getElementById("svgImage");
         const svgContainer = document.getElementById("svgContainer");
-        const zoomValue = document.getElementById("zoomValue");
 
         let viewBox = { x: 0, y: 0, w: 2000, h: 1000 }; // Initial viewBox matching SVG dimensions
         svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
 
+        const svgSize = { w: svgImage.clientWidth, h: svgImage.clientHeight };
         let isPanning = false;
         let startPoint = { x: 0, y: 0 };
-        let lastTouchCenter = null;
+        let currentTranslate = { x: 0, y: 0 };
         let scale = 1;
         let initialPinchDistance = null;
+        let lastTouchCenter = null;
 
         // Helper function to sync viewBox after zoom or pan
         function syncViewBox() {
             svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-            scale = svgImage.clientWidth / viewBox.w;
-            zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
+            currentTranslate = { x: viewBox.x, y: viewBox.y };
+            scale = svgSize.w / viewBox.w;
         }
 
-        // Desktop: Mouse Wheel Zooming
-        svgContainer.onwheel = function (e) {
+        // Desktop: Mouse Wheel Zooming (Inverted to zoom correctly)
+        svgContainer.onmousewheel = function (e) {
             e.preventDefault();
-            const zoomFactor = 0.1; // Adjust zoom factor as needed
             const w = viewBox.w;
             const h = viewBox.h;
             const mx = e.offsetX; // Mouse x relative to the container
             const my = e.offsetY; // Mouse y relative to the container
 
-            const dw = -w * zoomFactor * (e.deltaY > 0 ? -1 : 1); // Adjusted zoom direction
-            const dh = -h * zoomFactor * (e.deltaY > 0 ? -1 : 1);
+            const dw = -w * Math.sign(e.deltaY) * 0.1; // Inverted zoom factor
+            const dh = -h * Math.sign(e.deltaY) * 0.1;
+
+            const dx = (dw * mx) / svgSize.w;
+            const dy = (dh * my) / svgSize.h;
 
             viewBox = {
-                x: viewBox.x + (dw * mx / svgImage.clientWidth),
-                y: viewBox.y + (dh * my / svgImage.clientHeight),
+                x: viewBox.x + dx,
+                y: viewBox.y + dy,
                 w: viewBox.w - dw,
                 h: viewBox.h - dh
             };
@@ -82,21 +77,21 @@
         // Desktop: Mouse Dragging for Panning
         svgContainer.onmousedown = function (e) {
             isPanning = true;
-            startPoint = { x: e.clientX, y: e.clientY };
+            startPoint = { x: e.x, y: e.y };
+            currentTranslate = { x: viewBox.x, y: viewBox.y }; // Store current viewBox position
         };
 
         svgContainer.onmousemove = function (e) {
             if (isPanning) {
-                const dx = (startPoint.x - e.clientX) / scale;
-                const dy = (startPoint.y - e.clientY) / scale;
+                const dx = (startPoint.x - e.x) / scale;
+                const dy = (startPoint.y - e.y) / scale;
                 viewBox = {
-                    x: viewBox.x + dx,
-                    y: viewBox.y + dy,
+                    x: currentTranslate.x + dx,
+                    y: currentTranslate.y + dy,
                     w: viewBox.w,
                     h: viewBox.h
                 };
                 syncViewBox();
-                startPoint = { x: e.clientX, y: e.clientY }; // Update start point for continuous dragging
             }
         };
 
@@ -115,6 +110,7 @@
                 lastTouchCenter = getTouchCenter(e.touches[0], e.touches[1]);
             } else if (e.touches.length === 1) {
                 startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                currentTranslate = { x: viewBox.x, y: viewBox.y }; // Store current viewBox position
             }
         };
 
@@ -123,14 +119,17 @@
             if (e.touches.length === 2 && initialPinchDistance) {
                 const newPinchDistance = getDistance(e.touches[0], e.touches[1]);
                 const pinchRatio = initialPinchDistance / newPinchDistance;
-                const dw = viewBox.w * (1 - pinchRatio);
-                const dh = viewBox.h * (1 - pinchRatio);
-
                 const center = getTouchCenter(e.touches[0], e.touches[1]);
 
+                const dw = viewBox.w * (1 - pinchRatio); // Inverted zoom factor for mobile
+                const dh = viewBox.h * (1 - pinchRatio);
+
+                const dx = (dw * center.x) / svgSize.w;
+                const dy = (dh * center.y) / svgSize.h;
+
                 viewBox = {
-                    x: viewBox.x + (dw * center.x / svgImage.clientWidth),
-                    y: viewBox.y + (dh * center.y / svgImage.clientHeight),
+                    x: viewBox.x + dx,
+                    y: viewBox.y + dy,
                     w: viewBox.w - dw,
                     h: viewBox.h - dh
                 };
@@ -141,23 +140,19 @@
                 const dx = (startPoint.x - e.touches[0].clientX) / scale;
                 const dy = (startPoint.y - e.touches[0].clientY) / scale;
                 viewBox = {
-                    x: viewBox.x + dx,
-                    y: viewBox.y + dy,
+                    x: currentTranslate.x + dx,
+                    y: currentTranslate.y + dy,
                     w: viewBox.w,
                     h: viewBox.h
                 };
                 syncViewBox();
-                startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY }; // Update start point for continuous dragging
             }
         };
 
-        svgContainer.ontouchend = function (e) {
-            if (e.touches.length === 1) {
-                startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                lastTouchCenter = null; // Reset last touch center when ending pinch
-            } else if (e.touches.length === 0) {
-                initialPinchDistance = null; // Reset pinch distance when no touches are active
-            }
+        svgContainer.ontouchend = function () {
+            initialPinchDistance = null;
+            lastTouchCenter = null;
+            currentTranslate = { x: viewBox.x, y: viewBox.y };
         };
 
         function getDistance(touch1, touch2) {
