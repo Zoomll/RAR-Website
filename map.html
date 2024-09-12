@@ -16,6 +16,8 @@
         align-items: center;
         padding: 20px;
         overflow: hidden;
+        border: 2px solid #333;
+        margin: 20px;
     }
     #map-svg {
         max-width: 100%;
@@ -30,9 +32,16 @@
         display: none;
         pointer-events: none;
     }
+    #status {
+        text-align: center;
+        padding: 10px;
+        background-color: #f0f0f0;
+        margin-bottom: 10px;
+    }
 </style>
 </head>
 <body>
+<div id="status">Loading SVG...</div>
 <div id="map-container">
     <!-- The SVG will be loaded here -->
 </div>
@@ -42,12 +51,18 @@
 <script>
     const mapContainer = document.getElementById('map-container');
     const infoBox = document.getElementById('info-box');
+    const statusDiv = document.getElementById('status');
     let mapSvg;
 
     // Function to load the SVG file
     function loadSVG() {
         fetch('TheRobloxianArchipelagoMapV1.svg')
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
             .then(svgContent => {
                 mapContainer.innerHTML = svgContent;
                 mapSvg = document.querySelector('#map-container svg');
@@ -55,11 +70,17 @@
                     mapSvg.id = 'map-svg';
                     addInteractivity();
                     setupPanAndZoom();
+                    statusDiv.textContent = 'SVG loaded successfully!';
+                    statusDiv.style.backgroundColor = '#d4edda';
                 } else {
-                    console.error('No SVG element found in the loaded file');
+                    throw new Error('No SVG element found in the loaded file');
                 }
             })
-            .catch(error => console.error('Error loading SVG:', error));
+            .catch(error => {
+                console.error('Error loading SVG:', error);
+                statusDiv.textContent = `Error loading SVG: ${error.message}`;
+                statusDiv.style.backgroundColor = '#f8d7da';
+            });
     }
 
     // Call this function to load the SVG
