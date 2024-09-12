@@ -48,7 +48,7 @@
         const svgSize = { w: svgImage.clientWidth, h: svgImage.clientHeight };
         let isPanning = false;
         let startPoint = { x: 0, y: 0 };
-        let endPoint = { x: 0, y: 0 };
+        let currentTranslate = { x: 0, y: 0 };
         let scale = 1;
         let initialPinchDistance = null;
         let lastTouchCenter = null;
@@ -83,26 +83,27 @@
         svgContainer.onmousedown = function (e) {
             isPanning = true;
             startPoint = { x: e.x, y: e.y };
+            currentTranslate = { x: viewBox.x, y: viewBox.y }; // Store current viewBox position
         };
 
         svgContainer.onmousemove = function (e) {
             if (isPanning) {
-                endPoint = { x: e.x, y: e.y };
-                const dx = (startPoint.x - endPoint.x) / scale;
-                const dy = (startPoint.y - endPoint.y) / scale;
-                const movedViewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
+                const dx = (startPoint.x - e.x) / scale;
+                const dy = (startPoint.y - e.y) / scale;
+                const movedViewBox = {
+                    x: currentTranslate.x + dx,
+                    y: currentTranslate.y + dy,
+                    w: viewBox.w,
+                    h: viewBox.h
+                };
                 svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
             }
         };
 
         svgContainer.onmouseup = function () {
             if (isPanning) {
-                endPoint = { x: endPoint.x, y: endPoint.y };
-                const dx = (startPoint.x - endPoint.x) / scale;
-                const dy = (startPoint.y - endPoint.y) / scale;
-                viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
-                svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
                 isPanning = false;
+                currentTranslate = { x: viewBox.x, y: viewBox.y };
             }
         };
 
@@ -117,6 +118,7 @@
                 lastTouchCenter = getTouchCenter(e.touches[0], e.touches[1]);
             } else if (e.touches.length === 1) {
                 startPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                currentTranslate = { x: viewBox.x, y: viewBox.y }; // Store current viewBox position
             }
         };
 
@@ -145,10 +147,14 @@
                 svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
                 initialPinchDistance = newPinchDistance;
             } else if (e.touches.length === 1) {
-                endPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                const dx = (startPoint.x - endPoint.x) / scale;
-                const dy = (startPoint.y - endPoint.y) / scale;
-                const movedViewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
+                const dx = (startPoint.x - e.touches[0].clientX) / scale;
+                const dy = (startPoint.y - e.touches[0].clientY) / scale;
+                const movedViewBox = {
+                    x: currentTranslate.x + dx,
+                    y: currentTranslate.y + dy,
+                    w: viewBox.w,
+                    h: viewBox.h
+                };
                 svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
             }
         };
@@ -156,6 +162,7 @@
         svgContainer.ontouchend = function () {
             initialPinchDistance = null;
             lastTouchCenter = null;
+            currentTranslate = { x: viewBox.x, y: viewBox.y };
         };
 
         function getDistance(touch1, touch2) {
