@@ -133,6 +133,7 @@
                 const scaleDelta = e.deltaY * -0.001;
                 const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
 
+                // Calculate the zooming around the cursor point
                 const scaleRatio = newScale / scale;
                 translateX = mouseX - (mouseX - translateX) * scaleRatio;
                 translateY = mouseY - (mouseY - translateY) * scaleRatio;
