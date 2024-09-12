@@ -46,7 +46,7 @@
             scale = svgImage.clientWidth / viewBox.w;
         }
 
-        // Desktop: Mouse Wheel Zooming
+        // Desktop: Mouse Wheel Zooming (Inverted)
         svgContainer.onwheel = function (e) {
             e.preventDefault();
             const zoomFactor = 0.1; // Adjust zoom factor as needed
@@ -55,14 +55,14 @@
             const mx = e.offsetX; // Mouse x relative to the container
             const my = e.offsetY; // Mouse y relative to the container
 
-            const dw = -w * zoomFactor * (e.deltaY > 0 ? -1 : 1); // Adjusted zoom direction
-            const dh = -h * zoomFactor * (e.deltaY > 0 ? -1 : 1);
+            const dw = w * zoomFactor * (e.deltaY > 0 ? 1 : -1); // Inverted zoom direction
+            const dh = h * zoomFactor * (e.deltaY > 0 ? 1 : -1);
 
             viewBox = {
-                x: viewBox.x + (dw * mx / svgImage.clientWidth),
-                y: viewBox.y + (dh * my / svgImage.clientHeight),
-                w: viewBox.w - dw,
-                h: viewBox.h - dh
+                x: viewBox.x - (dw * mx / svgImage.clientWidth),
+                y: viewBox.y - (dh * my / svgImage.clientHeight),
+                w: viewBox.w + dw,
+                h: viewBox.h + dh
             };
 
             syncViewBox();
