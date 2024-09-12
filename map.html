@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Interactive SVG Map from File</title>
+    <title>Interactive Robloxian Archipelago Map with Pan and Zoom</title>
     <style>
         body, html {
             margin: 0;
@@ -20,6 +20,7 @@
             border: 2px solid #333;
             margin: 20px;
             position: relative;
+            touch-action: none; /* Prevent default touch gestures for better control */
         }
         #map-svg {
             max-width: 100%;
@@ -40,15 +41,10 @@
             background-color: #f0f0f0;
             margin-bottom: 10px;
         }
-        /* Hover effect for interactive regions */
-        .interactive:hover {
-            cursor: pointer;
-            fill: #666 !important;
-        }
     </style>
 </head>
 <body>
-    <div id="status">Loading SVG...</div>
+    <div id="status">Loading Robloxian Archipelago Map...</div>
     <div id="map-container">
         <!-- The SVG will be loaded here -->
     </div>
@@ -63,7 +59,7 @@
 
         // Function to load the SVG file
         function loadSVG() {
-            fetch('TheRobloxianArchipelagoMapV1.svg')  // Ensure this path is correct relative to the server/HTML file
+            fetch('TheRobloxianArchipelagoMapV1.svg')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,16 +89,19 @@
         // Call this function to load the SVG
         loadSVG();
 
-        // Pan and zoom functionality
+        // Pan and zoom functionality (Desktop + Mobile Support)
         function setupPanAndZoom() {
             let isDragging = false;
             let startX, startY, translateX = 0, translateY = 0;
             let scale = 1;
+            let lastTouchDistance = null;
 
+            // Update the SVG transformation (panning + zooming)
             function updateMapTransform() {
                 mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
             }
 
+            // Mouse events for desktop
             mapContainer.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 startX = e.clientX - translateX;
@@ -141,6 +140,63 @@
                 scale = newScale;
                 updateMapTransform();
             });
+
+            // Touch events for mobile
+            mapContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    // Single touch for pan
+                    isDragging = true;
+                    startX = e.touches[0].clientX - translateX;
+                    startY = e.touches[0].clientY - translateY;
+                } else if (e.touches.length === 2) {
+                    // Pinch-to-zoom gesture
+                    lastTouchDistance = getTouchDistance(e.touches);
+                }
+            });
+
+            mapContainer.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (isDragging && e.touches.length === 1) {
+                    // Pan
+                    translateX = e.touches[0].clientX - startX;
+                    translateY = e.touches[0].clientY - startY;
+                    updateMapTransform();
+                } else if (e.touches.length === 2) {
+                    // Zoom
+                    const newTouchDistance = getTouchDistance(e.touches);
+                    if (lastTouchDistance) {
+                        const scaleDelta = (newTouchDistance - lastTouchDistance) * 0.005;
+                        const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
+
+                        // Get the mid-point of the two fingers
+                        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                        const rect = mapSvg.getBoundingClientRect();
+                        const offsetX = midX - rect.left;
+                        const offsetY = midY - rect.top;
+
+                        const scaleRatio = newScale / scale;
+                        translateX = offsetX - (offsetX - translateX) * scaleRatio;
+                        translateY = offsetY - (offsetY - translateY) * scaleRatio;
+
+                        scale = newScale;
+                        updateMapTransform();
+                    }
+                    lastTouchDistance = newTouchDistance;
+                }
+            });
+
+            mapContainer.addEventListener('touchend', () => {
+                isDragging = false;
+                lastTouchDistance = null;
+            });
+
+            // Helper function to calculate the distance between two touches
+            function getTouchDistance(touches) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
         }
 
         // Function to add interactivity to SVG elements
@@ -151,11 +207,8 @@
                 element.style.transition = 'fill 0.3s';
                 const originalFill = element.getAttribute('fill') || '#ccc';
                 const hoverFill = '#666';
-                
-                // Add a class to make interactive elements respond to hover
-                element.classList.add('interactive');
 
-                // Show info box on hover
+                // Show info box on hover (desktop)
                 element.addEventListener('mousemove', (e) => {
                     const name = element.getAttribute('data-name') || 'Unnamed Area';
                     infoBox.innerHTML = name;
@@ -165,7 +218,7 @@
                     element.style.fill = hoverFill;
                 });
 
-                // Hide info box and reset color on mouseout
+                // Hide info box and reset color on mouseout (desktop)
                 element.addEventListener('mouseout', () => {
                     infoBox.style.display = 'none';
                     element.style.fill = originalFill;
