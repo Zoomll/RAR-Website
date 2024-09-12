@@ -53,6 +53,14 @@
         let initialPinchDistance = null;
         let lastTouchCenter = null;
 
+        // Helper function to sync viewBox after zoom or pan
+        function syncViewBox() {
+            svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+            currentTranslate = { x: viewBox.x, y: viewBox.y };
+            scale = svgSize.w / viewBox.w;
+            zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
+        }
+
         // Desktop: Mouse Wheel Zooming (Inverted to zoom correctly)
         svgContainer.onmousewheel = function (e) {
             e.preventDefault();
@@ -74,9 +82,7 @@
                 h: viewBox.h - dh
             };
 
-            scale = svgSize.w / viewBox.w;
-            zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
-            svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+            syncViewBox();
         };
 
         // Desktop: Mouse Dragging for Panning
@@ -90,21 +96,18 @@
             if (isPanning) {
                 const dx = (startPoint.x - e.x) / scale;
                 const dy = (startPoint.y - e.y) / scale;
-                const movedViewBox = {
+                viewBox = {
                     x: currentTranslate.x + dx,
                     y: currentTranslate.y + dy,
                     w: viewBox.w,
                     h: viewBox.h
                 };
-                svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
+                syncViewBox();
             }
         };
 
         svgContainer.onmouseup = function () {
-            if (isPanning) {
-                isPanning = false;
-                currentTranslate = { x: viewBox.x, y: viewBox.y };
-            }
+            isPanning = false;
         };
 
         svgContainer.onmouseleave = function () {
@@ -142,20 +145,18 @@
                     h: viewBox.h - dh
                 };
 
-                scale = svgSize.w / viewBox.w;
-                zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
-                svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
                 initialPinchDistance = newPinchDistance;
+                syncViewBox();
             } else if (e.touches.length === 1) {
                 const dx = (startPoint.x - e.touches[0].clientX) / scale;
                 const dy = (startPoint.y - e.touches[0].clientY) / scale;
-                const movedViewBox = {
+                viewBox = {
                     x: currentTranslate.x + dx,
                     y: currentTranslate.y + dy,
                     w: viewBox.w,
                     h: viewBox.h
                 };
-                svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
+                syncViewBox();
             }
         };
 
