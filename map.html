@@ -1,256 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Interactive Robloxian Archipelago Map with Pan and Zoom</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Zoom and Pan</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-        }
-        #map-container {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        #svgContainer {
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            border: 2px solid #333;
-            margin: 20px;
+            border: 1px solid black;
             position: relative;
-            touch-action: none; /* Prevent default touch gestures for better control */
         }
-        #map-svg {
-            max-width: 100%;
-            max-height: 100%;
+        #svgImage {
+            width: 100%;
+            height: 100%;
         }
-        #info-box {
+        #zoomValue {
             position: absolute;
-            background: white;
-            border: 1px solid #999;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
             border-radius: 5px;
-            padding: 10px;
-            display: none;
-            pointer-events: none;
-        }
-        #status {
-            text-align: center;
-            padding: 10px;
-            background-color: #f0f0f0;
-            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="status">Loading Robloxian Archipelago Map...</div>
-    <div id="map-container">
-        <!-- The SVG will be loaded here -->
+    <span id="zoomValue">1</span>
+    <div id="svgContainer">
+        <svg id="svgImage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
+            <!-- Sample SVG content -->
+            <circle cx="500" cy="500" r="400" stroke="black" stroke-width="10" fill="lightblue"></circle>
+        </svg>
     </div>
 
-    <div id="info-box"></div>
-
     <script>
-        const mapContainer = document.getElementById('map-container');
-        const infoBox = document.getElementById('info-box');
-        const statusDiv = document.getElementById('status');
-        let mapSvg;
+        const svgImage = document.getElementById("svgImage");
+        const svgContainer = document.getElementById("svgContainer");
+        const zoomValue = document.getElementById("zoomValue");
 
-        // Function to load the SVG file
-        function loadSVG() {
-            fetch('TheRobloxianArchipelagoMapV1.svg')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.text();
-                })
-                .then(svgContent => {
-                    mapContainer.innerHTML = svgContent;
-                    mapSvg = document.querySelector('#map-container svg');
-                    if (mapSvg) {
-                        mapSvg.id = 'map-svg';
-                        addInteractivity();
-                        setupPanAndZoom();
-                        statusDiv.textContent = 'SVG loaded successfully!';
-                        statusDiv.style.backgroundColor = '#d4edda';
-                    } else {
-                        throw new Error('No SVG element found in the loaded file');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading SVG:', error);
-                    statusDiv.textContent = `Error loading SVG: ${error.message}`;
-                    statusDiv.style.backgroundColor = '#f8d7da';
-                });
+        let viewBox = { x: 0, y: 0, w: 1000, h: 1000 }; // Initial viewBox matching SVG dimensions
+        svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+        
+        const svgSize = { w: svgImage.clientWidth, h: svgImage.clientHeight };
+        let isPanning = false;
+        let startPoint = { x: 0, y: 0 };
+        let endPoint = { x: 0, y: 0 };
+        let scale = 1;
+
+        svgContainer.onmousewheel = function (e) {
+            e.preventDefault();
+            const w = viewBox.w;
+            const h = viewBox.h;
+            const mx = e.offsetX; // mouse x relative to the container
+            const my = e.offsetY; // mouse y relative to the container
+            
+            const dw = w * Math.sign(e.deltaY) * 0.1; // zoom factor (increase/decrease size)
+            const dh = h * Math.sign(e.deltaY) * 0.1;
+            
+            const dx = dw * mx / svgSize.w; // adjust x based on mouse position
+            const dy = dh * my / svgSize.h; // adjust y based on mouse position
+            
+            viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w - dw, h: viewBox.h - dh };
+            scale = svgSize.w / viewBox.w;
+
+            // Update the zoom value display
+            zoomValue.innerText = `${Math.round(scale * 100) / 100}`;
+
+            // Apply the new viewBox
+            svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
         }
 
-        // Call this function to load the SVG
-        loadSVG();
+        svgContainer.onmousedown = function (e) {
+            isPanning = true;
+            startPoint = { x: e.x, y: e.y };
+        }
 
-        // Pan and zoom functionality (Desktop + Mobile Support)
-        function setupPanAndZoom() {
-            let isDragging = false;
-            let startX, startY, translateX = 0, translateY = 0;
-            let scale = 1;
-            let lastTouchDistance = null;
+        svgContainer.onmousemove = function (e) {
+            if (isPanning) {
+                endPoint = { x: e.x, y: e.y };
+                const dx = (startPoint.x - endPoint.x) / scale;
+                const dy = (startPoint.y - endPoint.y) / scale;
 
-            // Update the SVG transformation (panning + zooming)
-            function updateMapTransform() {
-                mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-            }
-
-            // Calculate mouse position relative to SVG
-            function getMousePos(e) {
-                const rect = mapSvg.getBoundingClientRect();
-                return {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                };
-            }
-
-            // Mouse events for desktop
-            mapContainer.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                const pos = getMousePos(e);
-                startX = pos.x - translateX;
-                startY = pos.y - translateY;
-            });
-
-            mapContainer.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    const pos = getMousePos(e);
-                    translateX = pos.x - startX;
-                    translateY = pos.y - startY;
-                    updateMapTransform();
-                }
-            });
-
-            mapContainer.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            mapContainer.addEventListener('mouseleave', () => {
-                isDragging = false;
-            });
-
-            mapContainer.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const pos = getMousePos(e);
-                const scaleDelta = e.deltaY * -0.001;
-                const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
-
-                // Calculate zoom center position
-                const scaleRatio = newScale / scale;
-                translateX = pos.x - (pos.x - translateX) * scaleRatio;
-                translateY = pos.y - (pos.y - translateY) * scaleRatio;
-
-                scale = newScale;
-                updateMapTransform();
-            });
-
-            // Touch events for mobile
-            mapContainer.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    // Single touch for pan
-                    isDragging = true;
-                    const pos = getTouchPos(e.touches[0]);
-                    startX = pos.x - translateX;
-                    startY = pos.y - translateY;
-                } else if (e.touches.length === 2) {
-                    // Pinch-to-zoom gesture
-                    lastTouchDistance = getTouchDistance(e.touches);
-                }
-            });
-
-            mapContainer.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (isDragging && e.touches.length === 1) {
-                    // Pan
-                    const pos = getTouchPos(e.touches[0]);
-                    translateX = pos.x - startX;
-                    translateY = pos.y - startY;
-                    updateMapTransform();
-                } else if (e.touches.length === 2) {
-                    // Zoom
-                    const newTouchDistance = getTouchDistance(e.touches);
-                    if (lastTouchDistance) {
-                        const scaleDelta = (newTouchDistance - lastTouchDistance) * 0.005;
-                        const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
-
-                        // Get the mid-point of the two fingers
-                        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                        const rect = mapSvg.getBoundingClientRect();
-                        const offsetX = midX - rect.left;
-                        const offsetY = midY - rect.top;
-
-                        const scaleRatio = newScale / scale;
-                        translateX = offsetX - (offsetX - translateX) * scaleRatio;
-                        translateY = offsetY - (offsetY - translateY) * scaleRatio;
-
-                        scale = newScale;
-                        updateMapTransform();
-                    }
-                    lastTouchDistance = newTouchDistance;
-                }
-            });
-
-            mapContainer.addEventListener('touchend', () => {
-                isDragging = false;
-                lastTouchDistance = null;
-            });
-
-            // Helper function to calculate the distance between two touches
-            function getTouchDistance(touches) {
-                const dx = touches[0].clientX - touches[1].clientX;
-                const dy = touches[0].clientY - touches[1].clientY;
-                return Math.sqrt(dx * dx + dy * dy);
-            }
-
-            // Get touch position relative to SVG
-            function getTouchPos(touch) {
-                const rect = mapSvg.getBoundingClientRect();
-                return {
-                    x: touch.clientX - rect.left,
-                    y: touch.clientY - rect.top
-                };
+                const movedViewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
+                svgImage.setAttribute('viewBox', `${movedViewBox.x} ${movedViewBox.y} ${movedViewBox.w} ${movedViewBox.h}`);
             }
         }
 
-        // Function to add interactivity to SVG elements
-        function addInteractivity() {
-            const interactiveElements = mapSvg.querySelectorAll('path, polygon, rect, circle, ellipse');
+        svgContainer.onmouseup = function (e) {
+            if (isPanning) {
+                endPoint = { x: e.x, y: e.y };
+                const dx = (startPoint.x - endPoint.x) / scale;
+                const dy = (startPoint.y - endPoint.y) / scale;
 
-            interactiveElements.forEach(element => {
-                element.style.transition = 'fill 0.3s';
-                const originalFill = element.getAttribute('fill') || '#ccc';
-                const hoverFill = '#666';
+                viewBox = { x: viewBox.x + dx, y: viewBox.y + dy, w: viewBox.w, h: viewBox.h };
+                svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+                isPanning = false;
+            }
+        }
 
-                // Show info box on hover (desktop)
-                element.addEventListener('mousemove', (e) => {
-                    const name = element.getAttribute('data-name') || 'Unnamed Area';
-                    infoBox.innerHTML = name;
-                    infoBox.style.display = 'block';
-                    infoBox.style.left = e.pageX + 10 + 'px';
-                    infoBox.style.top = e.pageY + 10 + 'px';
-                    element.style.fill = hoverFill;
-                });
-
-                // Hide info box and reset color on mouseout (desktop)
-                element.addEventListener('mouseout', () => {
-                    infoBox.style.display = 'none';
-                    element.style.fill = originalFill;
-                });
-
-                // Add a click event to show an alert with the name of the clicked region
-                element.addEventListener('click', () => {
-                    const name = element.getAttribute('data-name') || 'Unnamed Area';
-                    alert(`You clicked on ${name}`);
-                });
-            });
+        svgContainer.onmouseleave = function () {
+            isPanning = false;
         }
     </script>
 </body>
