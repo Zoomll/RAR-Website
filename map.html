@@ -46,7 +46,7 @@
             scale = svgImage.clientWidth / viewBox.w;
         }
 
-        // Desktop: Mouse Wheel Zooming (Inverted)
+        // Desktop: Mouse Wheel Zooming (Focus on cursor position)
         svgContainer.onwheel = function (e) {
             e.preventDefault();
             const zoomFactor = 0.1; // Adjust zoom factor as needed
@@ -55,9 +55,11 @@
             const mx = e.offsetX; // Mouse x relative to the container
             const my = e.offsetY; // Mouse y relative to the container
 
+            // Calculate the zoom factor
             const dw = w * zoomFactor * (e.deltaY > 0 ? 1 : -1); // Inverted zoom direction
             const dh = h * zoomFactor * (e.deltaY > 0 ? 1 : -1);
 
+            // Adjust viewBox based on cursor position
             viewBox = {
                 x: viewBox.x - (dw * mx / svgImage.clientWidth),
                 y: viewBox.y - (dh * my / svgImage.clientHeight),
