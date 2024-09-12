@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>Interactive Robloxian Archipelago Map with Pan and Zoom</title>
@@ -101,17 +102,28 @@
                 mapSvg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
             }
 
+            // Calculate mouse position relative to SVG
+            function getMousePos(e) {
+                const rect = mapSvg.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+
             // Mouse events for desktop
             mapContainer.addEventListener('mousedown', (e) => {
                 isDragging = true;
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
+                const pos = getMousePos(e);
+                startX = pos.x - translateX;
+                startY = pos.y - translateY;
             });
 
             mapContainer.addEventListener('mousemove', (e) => {
                 if (isDragging) {
-                    translateX = e.clientX - startX;
-                    translateY = e.clientY - startY;
+                    const pos = getMousePos(e);
+                    translateX = pos.x - startX;
+                    translateY = pos.y - startY;
                     updateMapTransform();
                 }
             });
@@ -126,17 +138,14 @@
 
             mapContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                const rect = mapSvg.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
+                const pos = getMousePos(e);
                 const scaleDelta = e.deltaY * -0.001;
                 const newScale = Math.min(Math.max(0.5, scale + scaleDelta), 4);
 
-                // Calculate the zooming around the cursor point
+                // Calculate zoom center position
                 const scaleRatio = newScale / scale;
-                translateX = mouseX - (mouseX - translateX) * scaleRatio;
-                translateY = mouseY - (mouseY - translateY) * scaleRatio;
+                translateX = pos.x - (pos.x - translateX) * scaleRatio;
+                translateY = pos.y - (pos.y - translateY) * scaleRatio;
 
                 scale = newScale;
                 updateMapTransform();
@@ -147,8 +156,9 @@
                 if (e.touches.length === 1) {
                     // Single touch for pan
                     isDragging = true;
-                    startX = e.touches[0].clientX - translateX;
-                    startY = e.touches[0].clientY - translateY;
+                    const pos = getTouchPos(e.touches[0]);
+                    startX = pos.x - translateX;
+                    startY = pos.y - translateY;
                 } else if (e.touches.length === 2) {
                     // Pinch-to-zoom gesture
                     lastTouchDistance = getTouchDistance(e.touches);
@@ -159,8 +169,9 @@
                 e.preventDefault();
                 if (isDragging && e.touches.length === 1) {
                     // Pan
-                    translateX = e.touches[0].clientX - startX;
-                    translateY = e.touches[0].clientY - startY;
+                    const pos = getTouchPos(e.touches[0]);
+                    translateX = pos.x - startX;
+                    translateY = pos.y - startY;
                     updateMapTransform();
                 } else if (e.touches.length === 2) {
                     // Zoom
@@ -197,6 +208,15 @@
                 const dx = touches[0].clientX - touches[1].clientX;
                 const dy = touches[0].clientY - touches[1].clientY;
                 return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Get touch position relative to SVG
+            function getTouchPos(touch) {
+                const rect = mapSvg.getBoundingClientRect();
+                return {
+                    x: touch.clientX - rect.left,
+                    y: touch.clientY - rect.top
+                };
             }
         }
 
