@@ -124,9 +124,12 @@
                 const dw = viewBox.w * (1 - pinchRatio);
                 const dh = viewBox.h * (1 - pinchRatio);
 
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
                 viewBox = {
-                    x: viewBox.x + (dw * (e.touches[0].clientX + e.touches[1].clientX) / 2 / svgImage.clientWidth),
-                    y: viewBox.y + (dh * (e.touches[0].clientY + e.touches[1].clientY) / 2 / svgImage.clientHeight),
+                    x: viewBox.x + (dw * cx / svgImage.clientWidth),
+                    y: viewBox.y + (dh * cy / svgImage.clientHeight),
                     w: viewBox.w - dw,
                     h: viewBox.h - dh
                 };
@@ -147,8 +150,10 @@
             }
         };
 
-        svgContainer.ontouchend = function () {
-            initialPinchDistance = null;
+        svgContainer.ontouchend = function (e) {
+            if (e.touches.length === 0) {
+                initialPinchDistance = null; // Reset pinch distance when no touches are active
+            }
         };
 
         function getDistance(touch1, touch2) {
