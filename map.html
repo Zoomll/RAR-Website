@@ -32,6 +32,7 @@
     <div id="svgContainer">
         <!-- Your SVG Map (The Robloxian Archipelago Map) -->
         <svg id="svgImage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1000" preserveAspectRatio="xMidYMid meet">
+            <!-- Load your map image here -->
             <image href="TheRobloxianArchipelagoMapV1.svg" width="2000" height="1000" />
         </svg>
     </div>
@@ -49,7 +50,7 @@
         let scale = 1;
 
         // Mousewheel Zooming (fix zoom direction)
-        svgContainer.onmousewheel = function (e) {
+        svgContainer.onwheel = function (e) {
             e.preventDefault();
             let w = viewBox.w;
             let h = viewBox.h;
@@ -121,6 +122,42 @@
 
         svgContainer.onmouseleave = function () {
             isPanning = false;
+        };
+
+        // Mobile Touch Support
+        let touchStart = [];
+        svgContainer.ontouchstart = function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                touchStart = [e.touches[0], e.touches[1]];
+            }
+        };
+
+        svgContainer.ontouchmove = function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+
+                const [firstTouch, secondTouch] = e.touches;
+                const currentDist = Math.hypot(secondTouch.pageX - firstTouch.pageX, secondTouch.pageY - firstTouch.pageY);
+                const startDist = Math.hypot(touchStart[1].pageX - touchStart[0].pageX, touchStart[1].pageY - touchStart[0].pageY);
+
+                const pinchZoomFactor = currentDist / startDist;
+
+                // Calculate new viewbox based on pinch zoom factor
+                let dw = (viewBox.w - viewBox.w * pinchZoomFactor) * 0.5;
+                let dh = (viewBox.h - viewBox.h * pinchZoomFactor) * 0.5;
+
+                viewBox.x += dw;
+                viewBox.y += dh;
+                viewBox.w -= 2 * dw;
+                viewBox.h -= 2 * dh;
+
+                scale = svgSize.w / viewBox.w;
+                svgImage.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+
+                // Update for next touch move
+                touchStart = [firstTouch, secondTouch];
+            }
         };
     </script>
 </body>
