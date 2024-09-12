@@ -19,6 +19,7 @@
             overflow: hidden;
             border: 2px solid #333;
             margin: 20px;
+            position: relative;
         }
         #map-svg {
             max-width: 100%;
@@ -39,6 +40,11 @@
             background-color: #f0f0f0;
             margin-bottom: 10px;
         }
+        /* Hover effect for interactive regions */
+        .interactive:hover {
+            cursor: pointer;
+            fill: #666 !important;
+        }
     </style>
 </head>
 <body>
@@ -57,7 +63,7 @@
 
         // Function to load the SVG file
         function loadSVG() {
-            fetch('TheRobloxianArchipelagoMapV1.svg')  // Ensure this path is correct relative to the server/HTML file
+            fetch('SVG.svg')  // Ensure this path is correct relative to the server/HTML file
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -144,8 +150,12 @@
             interactiveElements.forEach(element => {
                 element.style.transition = 'fill 0.3s';
                 const originalFill = element.getAttribute('fill') || '#ccc';
-                const hoverFill = '#999';
+                const hoverFill = '#666';
+                
+                // Add a class to make interactive elements respond to hover
+                element.classList.add('interactive');
 
+                // Show info box on hover
                 element.addEventListener('mousemove', (e) => {
                     const name = element.getAttribute('data-name') || 'Unnamed Area';
                     infoBox.innerHTML = name;
@@ -155,11 +165,13 @@
                     element.style.fill = hoverFill;
                 });
 
+                // Hide info box and reset color on mouseout
                 element.addEventListener('mouseout', () => {
                     infoBox.style.display = 'none';
                     element.style.fill = originalFill;
                 });
 
+                // Add a click event to show an alert with the name of the clicked region
                 element.addEventListener('click', () => {
                     const name = element.getAttribute('data-name') || 'Unnamed Area';
                     alert(`You clicked on ${name}`);
