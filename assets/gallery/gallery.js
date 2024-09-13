@@ -1,6 +1,6 @@
 // Array of image filenames (manually listed)
 const images = [
-    'winningsmile.png'
+    './winning-smile.png',
 ];
 
 // Directory where images are stored relative to this script
