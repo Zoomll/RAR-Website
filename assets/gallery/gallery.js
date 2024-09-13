@@ -4,7 +4,7 @@ const images = [
 ];
 
 // Directory where images are stored relative to this script
-const imageDirectory = './gallary/';
+const imageDirectory = '../gallery/';
 
 // Function to load and display images
 function loadImages() {
