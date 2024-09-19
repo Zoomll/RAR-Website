@@ -1,1 +1,24 @@
-
+{
+  "groups":{
+    "noobs":{
+      "name": "The Noobs' Nation",
+      "id": 14413457,
+      "leaders":{
+        "1":{
+          "username": "@zoomll9833",
+          "groupowner": true
+        }
+      }
+    },
+    "cubes":{
+      "name": "The Cube Incorporations",
+      "id": 16975779,
+      "leaders":{
+        "1":{
+          "username": "@Schmicd66026",
+          "groupowner": true
+        }
+      }
+    }
+  }
+}
