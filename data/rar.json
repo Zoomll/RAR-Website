@@ -3,9 +3,11 @@
     "noobs":{
       "name": "The Noobs' Nation",
       "id": 14413457,
+      "founding": true,
       "leaders":{
         "1":{
           "username": "@zoomll9833",
+          "officialname": "Noob King",
           "groupowner": true
         }
       }
@@ -13,9 +15,23 @@
     "cubes":{
       "name": "The Cube Incorporations",
       "id": 16975779,
+      "founding": true,
       "leaders":{
         "1":{
           "username": "@Schmicd66026",
+          "officialname": "Cube King",
+          "groupowner": true
+        }
+      }
+    },
+    "rats":{
+      "name": "FriendGalore",
+      "id": 32659444,
+      "founding": true,
+      "leaders":{
+        "1":{
+          "username": "@Err0rErr0GUN2",
+          "officialname": "RatQueen"
           "groupowner": true
         }
       }
