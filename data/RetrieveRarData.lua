@@ -1,4 +1,5 @@
-// insert this as module script
+// do not insert this script by downloading then importing it
+// instead, copy and paste the code below
 
 // initializes httpservice
 local http = game:GetService("httpservice")
