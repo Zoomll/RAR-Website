@@ -11,6 +11,9 @@
             margin-right: auto;
             display: block;
         }
+        hr {
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -38,6 +41,7 @@
                 const imgElement = document.createElement('img');
                 imgElement.src = image;
                 gallery.appendChild(imgElement);
+                gallery.appendChild(document.createElement('hr');
             });
         }
 
